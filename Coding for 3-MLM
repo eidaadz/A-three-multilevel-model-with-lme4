@@ -1,0 +1,39 @@
+title: "Modelling three multilevel model with lme4 package in R"
+author: NHZ
+
+Introduction:
+
+Lets fit some models with:
+
+Outcome: Clinical decision-making
+Level 1 (Individual-level factors): Age, Gender, Education, Experience, post basic (PB), continous professional development (CPD), knowledge (NKS) and critical thinking (CTS)
+Level 2 (Hospital-level factors): Unit, Department size, hospital settings and hospital size
+Level 3 (Regional-level factors): State, state size
+
+# Install packages
+install.packages("lme4")
+install.packages("lmerTest")
+install.packages("performance")
+install.packages ("reghelper")
+
+# Load the library
+library(lme4) #multilevel analysis
+library(lmerTest) # to get p-value estimations 
+library(performance) # to get ICC
+library(reghelper) # to plot the interaction
+
+# Import the data
+library(readxl)
+CTCDMR <- read_excel("CTCDMR.xlsx", sheet = "sheet1")
+
+##Combine hospital and department ID within each region to create a unique identifier for hosp.dep:
+CTCDMR$hosp.dep <- paste(CTCDMR$Hospital, CTCDMR$DepartmentID, sep = "_")
+
+# Select Data
+library(dplyr)
+CTCDMR <- select(CTCDMR, NurseID, hosp.dep, DepartmentID, Hospital, Age, Gender, Education, Experience, PB, CPD,HospitalSet, HospitalSize, DepSize, Unit, State, Region, StateSize, CDMS, CTS, NKS)
+head(CTCDMR, n=50)
+
+# Two-level Multilevel analysis
+## Null model
+
