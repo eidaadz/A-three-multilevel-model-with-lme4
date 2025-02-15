@@ -1,12 +1,13 @@
-title: "Modelling three multilevel model with lme4 package in R"
+title: "Modelling three multilevel models with lme4 package in R"
 author: NHZ
 
 Introduction:
 
-Lets fit some models with:
+Let's fit some models with:
 
 Outcome: Clinical decision-making
-Level 1 (Individual-level factors): Age, Gender, Education, Experience, post basic (PB), continous professional development (CPD), knowledge (NKS) and critical thinking (CTS)
+Level 1 (Individual-level factors): Age, Gender, Education, Experience, post-basic (PB), 
+        continuous professional development (CPD), knowledge (NKS), and critical thinking (CTS)
 Level 2 (Hospital-level factors): Unit, Department size, hospital settings and hospital size
 Level 3 (Regional-level factors): State, state size
 
@@ -26,14 +27,73 @@ library(reghelper) # to plot the interaction
 library(readxl)
 CTCDMR <- read_excel("CTCDMR.xlsx", sheet = "sheet1")
 
-##Combine hospital and department ID within each region to create a unique identifier for hosp.dep:
+##Combine hospital and department ID within each region to create a unique identifier for hosp.dep
 CTCDMR$hosp.dep <- paste(CTCDMR$Hospital, CTCDMR$DepartmentID, sep = "_")
 
 # Select Data
 library(dplyr)
-CTCDMR <- select(CTCDMR, NurseID, hosp.dep, DepartmentID, Hospital, Age, Gender, Education, Experience, PB, CPD,HospitalSet, HospitalSize, DepSize, Unit, State, Region, StateSize, CDMS, CTS, NKS)
+CTCDMR <- select(CTCDMR, NurseID, hosp.dep, DepartmentID, Hospital, Age, Gender, Education, Experience, 
+PB, CPD,HospitalSet, HospitalSize, DepSize, Unit, State, Region, StateSize, CDMS, CTS, NKS)
 head(CTCDMR, n=50)
 
 # Two-level Multilevel analysis
 ## Null model
+library(lme4)
+m0 <- lmer(CDMS ~ 1 + (1 |hosp.dep), data = CTCDMR, REML = FALSE)
+summary(m0)
 
+## ICC
+library(performance)
+performance::icc(m0)
+
+## Random intercept model
+ri <- lmer(CDMS ~ NKS + Age + Gender + Education + Experience + PB + CPD + CTS + Unit + DepSize 
++ HospitalSet + HospitalSize + (1 | hosp.dep), data = CTCDMR, REML = FALSE)
+summary(ri)
+
+## Random Slopes model
+CTCDMR$NKS.GM <- scale(CTCDMR$NKS, scale = F) #to overcome different scale issues
+CTCDMR$CTS.GM <- scale(CTCDMR$CTS, scale = F)
+
+rs <- lmer(CDMS ~ NKS.GM + Experience + factor(HospitalSet) +
+(1 + NKS.GM + Experience | hosp.dep),
+data = CTCDMR, REML = FALSE,lmerControl(optimizer = 'bobyqa'))
+summary(rs)
+
+# Three-level Multilevel analysis
+## Null model
+### Short version
+L3.M0a <- lmer(CDMS ~ 1
++ (1 | Region/hosp.dep), data = CTCDMR) 
+summary(L3.M0a)
+
+### Longer version
+L3.M0b <- lmer(CDMS ~ 1
++ (1|Region)
++ (1|Region: DepartmentID), data = CTCDMR)
+summary(L3.M0b)
+
+## Random intercept model
+L3.ri <- lmer(CDMS ~ CTS + NKS + HospitalSize + (1|Region)
++ (1|Region: DepartmentID), data = CTCDMR, REML = FALSE)
+summary(L3.ri)
+
+## Random Slope model
+L3.RS <-lmer(CDMS ~ CTS.GM + Experience + Unit + HospitalSet
++ (1+ CTS.GM|Region)
++ (1|Region: DepartmentID),
+data=CTCDMR, REML=FALSE,lmerControl(optimizer = 'bobyqa'))
+summary(L3.RS)
+
+# Interactions and Cross-Level Interactions
+L3.int <- lmer (CDMS ~ NKS.GM * Experience + CTS.GM * NKS.GM + CTS.GM * Experience + Experience * HospitalSet
++ (1|Region) + (1|Region: DepartmentID), data = CTCDMR, REML = FALSE)
+summary(L3.int)
+
+# Plot interaction
+graph_model(
+  model = L3.int, 
+  y = CDMS, 
+  x = Experience, 
+  lines = HospitalSet, 
+  errorbars = "none")
