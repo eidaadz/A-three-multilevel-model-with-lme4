@@ -18,7 +18,7 @@ The results of the three-level mixed-effects model revealed that the effect of c
 ## Reproducibility
 
 To reproduce the analysis:
-Clone the repository: git clone https://github.com/eidaadz/SRMA_CTCDM/tree/main
+Clone the repository: git clone https://github.com/eidaadz/A-three-multilevel-model-with-lme4.git
 
 Install required packages:
 install.packages(c("lme4", "lmertest","performance","reghelper"))
