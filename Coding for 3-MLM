@@ -60,6 +60,9 @@ rs <- lmer(CDMS ~ NKS.GM + Experience + factor(HospitalSet) +
 data = CTCDMR, REML = FALSE,lmerControl(optimizer = 'bobyqa'))
 summary(rs)
 
+---------------------------------------------------------------------------------------------------------
+
+
 # Three-level Multilevel analysis
 ## Null model
 ### Short version
